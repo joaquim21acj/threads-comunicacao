@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <math.h>
+#define LINHA 3
+#define COLUNA 3
 struct no
 {
 //utilizando os tipos redefinidos dentro da struct
@@ -16,6 +18,7 @@ struct atuacao{
 int linha[3];
 int coluna[3];
 int posicaoX, posicaoY;
+no **mapa;
 };
 //definição da área de atuação
 typedef struct atuacao atuacao;
@@ -23,12 +26,15 @@ typedef struct atuacao atuacao;
 /*Rotina que será executada*/
 void * routine(void *arg);
 /*Função para preenchimento da tela*/
-int preencheTela(no matriz[30][30]);
+int** alocarMatriz(int Linhas,int Colunas);
+int preencheTela(no **matriz);
 int isThread(int valor);
+int *temFoco(int linha[LINHA], int coluna[COLUNA], no **matriz);
+
 int main (int argc, char *argv[])
 {
-    no matriz[30][30];
-    int i = preencheTela(matriz);
+    no **matriz;
+    int i = preencheTela(&matriz);
     int a;
 //    /*tenta iniciar o thread, indicando a função 'routine' e passando como argumento a string "Thread A"*/
 //    rstatus = pthread_create(&thread_idA, NULL, routine, (void*)("Thread A"));
@@ -85,16 +91,18 @@ void * routine(void *arg)
     atuacao *thr;
     thr = (atuacao *)arg;
     printf("Posicao da thread X: %d Y: %d\n", thr->posicaoX, thr->posicaoY);
+    temFoco(thr->linha, thr->coluna, thr->mapa);
     /*finaliza a função retornando o argumento que foi recebido*/
     pthread_exit(arg);
 }
-int preencheTela(no matriz[30][30])
+int preencheTela(no **matriz)
 {
     int xinicial = 0;     // valor inicial
     int xfinal = 29; // valor final
-    for(int i=0; i<xfinal; i++)
+    matriz = alocarMatriz(30, 30);
+    for(int i=0; i<3; i++)
     {
-        for(int j=0; j<xfinal; j++)
+        for(int j=0; j<3; j++)
         {
             if((isThread(i)==1) && (isThread(j)==1))
             {
@@ -119,6 +127,7 @@ int preencheTela(no matriz[30][30])
                 void * thread_res;
                 int rstatus;
 
+                area.mapa = &matriz;
                 atuacao *ptArea = &area;
                 rstatus = pthread_create (&thread_id, NULL, routine, (void*)(ptArea));
 
@@ -126,6 +135,43 @@ int preencheTela(no matriz[30][30])
         }
     }
     return 0;
+}
+//Pode ter que alterar para passar por refência, já que enquanto executa uma funçao pode haver um novo foco de incêndio
+int *temFoco(int linha[LINHA], int coluna[COLUNA], no **matriz){
+    static int posicao[2];
+    for(int i = 0; i<LINHA; i++){
+        for(int j = 0; j<COLUNA; j++){
+            int x = linha[i];
+            int y = coluna[j];
+            no mt = matriz[x][y];
+            if(mt.fogo==1){
+                posicao[0] = x;
+                posicao[1] = y;
+                return posicao;
+            }else{
+                printf("\nNão houve");
+                char a;
+                scanf(&a);
+            }
+        }
+    }
+}
+
+int** alocarMatriz(int Linhas,int Colunas){ //Recebe a quantidade de Linhas e Colunas como Parâmetro
+
+  int i,j; //Variáveis Auxiliares
+
+  no **m = (no**)malloc(Linhas * sizeof(no*)); //Aloca um Vetor de Ponteiros
+
+  for (i = 0; i < Linhas; i++){ //Percorre as linhas do Vetor de Ponteiros
+       m[i] = (no*) malloc(Colunas * sizeof(no)); //Aloca um Vetor de Inteiros para cada posição do Vetor de Ponteiros.
+       for (j = 0; j < Colunas; j++){ //Percorre o Vetor de Inteiros atual.
+            m[i][j].fogo = 0;
+            m[i][j].thread = 0;
+             //Inicializa com 0.
+       }
+  }
+return m; //Retorna o Ponteiro para a Matriz Alocada
 }
 
 int isThread(int valor)
